@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Unsubscribe | Singapore A.I. Association</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0A2540;
+    --blue: #0068FF;
+    --tint: #EEF3FB;
+    --body: #3D4C5E;
+    --muted: #7A8899;
+    --line: #DDE7F3;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: var(--tint);
+    font-family: 'Lato', Arial, sans-serif;
+    color: var(--body);
+  }
+  .card {
+    width: 100%;
+    max-width: 520px;
+    background: #fff;
+    border-radius: 14px;
+    padding: 40px 36px;
+    text-align: center;
+    box-shadow: 0 6px 30px rgba(10, 37, 64, 0.08);
+  }
+  .logo { width: 170px; margin: 0 auto 28px; display: block; }
+  h1 {
+    font-family: 'Montserrat', Arial, sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--navy);
+    margin: 0 0 12px;
+    line-height: 1.35;
+  }
+  p { font-size: 15px; line-height: 1.6; margin: 0 0 18px; }
+  .email {
+    display: inline-block;
+    background: var(--tint);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-weight: 700;
+    color: var(--navy);
+    word-break: break-all;
+    margin-bottom: 24px;
+  }
+  button {
+    font-family: 'Montserrat', Arial, sans-serif;
+    font-size: 15px;
+    font-weight: 800;
+    color: #fff;
+    background: var(--blue);
+    border: 0;
+    border-radius: 8px;
+    padding: 14px 34px;
+    cursor: pointer;
+    transition: opacity .15s ease;
+  }
+  button:hover { opacity: .9; }
+  button:disabled { opacity: .55; cursor: default; }
+  .muted { font-size: 13px; color: var(--muted); margin: 22px 0 0; }
+  a { color: var(--blue); text-decoration: none; font-weight: 700; }
+  .hide { display: none; }
+  .tick {
+    width: 54px; height: 54px; border-radius: 50%;
+    background: #E8F7EF; color: #2FA36B;
+    font-size: 28px; line-height: 54px; font-weight: 700;
+    margin: 0 auto 18px;
+  }
+  .warn { color: #C0392B; font-weight: 700; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <img class="logo"
+         src="https://raw.githubusercontent.com/saia-adc/saia-assets/main/saia_logo_email.png"
+         alt="Singapore A.I. Association">
+
+    <!-- STATE: confirm -->
+    <div id="confirm" class="hide">
+      <h1>Unsubscribe from SAIA emails?</h1>
+      <p>You will stop receiving invitations and updates from the Singapore A.I. Association at:</p>
+      <div class="email" id="emailLabel"></div>
+      <div>
+        <button id="btn" type="button">Yes, unsubscribe me</button>
+      </div>
+      <p class="muted">Changed your mind? Simply close this page and nothing happens.</p>
+    </div>
+
+    <!-- STATE: done -->
+    <div id="done" class="hide">
+      <div class="tick">&#10003;</div>
+      <h1>You have been unsubscribed</h1>
+      <p>We will not send you any further emails. Thank you for your time with us.</p>
+      <p class="muted">Unsubscribed by mistake? Email
+        <a href="mailto:kelvin.pek@saia.org.sg">kelvin.pek@saia.org.sg</a> and we will restore it.</p>
+    </div>
+
+    <!-- STATE: missing / invalid link -->
+    <div id="missing" class="hide">
+      <h1>This unsubscribe link is incomplete</h1>
+      <p>We could not read an email address from this link. Please use the unsubscribe link
+         at the bottom of the email you received, or contact us directly.</p>
+      <p class="muted"><a href="mailto:kelvin.pek@saia.org.sg">kelvin.pek@saia.org.sg</a></p>
+    </div>
+
+    <!-- STATE: error -->
+    <div id="error" class="hide">
+      <h1>Something went wrong</h1>
+      <p class="warn">We could not process your request just now.</p>
+      <p>Please try again in a moment, or email
+         <a href="mailto:kelvin.pek@saia.org.sg">kelvin.pek@saia.org.sg</a>
+         and we will remove you manually.</p>
+    </div>
+  </div>
+
+<script>
+  // ── Point this at your n8n webhook (production URL) ────────────────────────
+  const WEBHOOK = 'https://n8n.fluffless-finance.sg/webhook/unsubscribe';
+
+  const show = id => {
+    ['confirm', 'done', 'missing', 'error'].forEach(s => {
+      document.getElementById(s).classList.toggle('hide', s !== id);
+    });
+  };
+
+  const params = new URLSearchParams(window.location.search);
+  const email = (params.get('e') || '').trim();
+  const valid = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email);
+
+  if (!valid) {
+    show('missing');
+  } else {
+    document.getElementById('emailLabel').textContent = email;
+    show('confirm');
+
+    document.getElementById('btn').addEventListener('click', async () => {
+      const btn = document.getElementById('btn');
+      btn.disabled = true;
+      btn.textContent = 'Processing...';
+      try {
+        const res = await fetch(WEBHOOK + '?e=' + encodeURIComponent(email), { method: 'GET' });
+        if (!res.ok) throw new Error('bad status ' + res.status);
+        show('done');
+      } catch (err) {
+        console.error(err);
+        show('error');
+      }
+    });
+  }
+</script>
+</body>
+</html>
