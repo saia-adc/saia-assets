@@ -108,7 +108,7 @@
       <h1>You have been unsubscribed</h1>
       <p>We will not send you any further emails. Thank you for your time with us.</p>
       <p class="muted">Unsubscribed by mistake? Email
-        <a href="mailto:kelvin.pek@saia.org.sg">kelvin.pek@saia.org.sg</a> and we will restore it.</p>
+        <a href="mailto:admin@saia.org.sg">admin@saia.org.sg</a> and we will restore it.</p>
     </div>
 
     <!-- STATE: missing / invalid link -->
@@ -116,7 +116,7 @@
       <h1>This unsubscribe link is incomplete</h1>
       <p>We could not read an email address from this link. Please use the unsubscribe link
          at the bottom of the email you received, or contact us directly.</p>
-      <p class="muted"><a href="mailto:kelvin.pek@saia.org.sg">kelvin.pek@saia.org.sg</a></p>
+      <p class="muted"><a href="mailto:admin@saia.org.sg">admin@saia.org.sg</a></p>
     </div>
 
     <!-- STATE: error -->
@@ -124,14 +124,14 @@
       <h1>Something went wrong</h1>
       <p class="warn">We could not process your request just now.</p>
       <p>Please try again in a moment, or email
-         <a href="mailto:kelvin.pek@saia.org.sg">kelvin.pek@saia.org.sg</a>
+         <a href="mailto:admin@saia.org.sg">admin@saia.org.sg</a>
          and we will remove you manually.</p>
     </div>
   </div>
 
 <script>
-  // ── Point this at your n8n webhook (production URL) ────────────────────────
-  const WEBHOOK = 'https://n8n.fluffless-finance.sg/webhook/unsubscribe';
+  // Google Apps Script web app: appends the email to the "SAIA Unsubscribes" sheet
+  const WEBHOOK = 'https://script.google.com/macros/s/AKfycbzHg9Y8zqw-9s7i8szztYuP2625t1N6UzKEMHgGzWRKMNwbQ_VIBpXF6jTJf1sEFNk/exec';
 
   const show = id => {
     ['confirm', 'done', 'missing', 'error'].forEach(s => {
@@ -141,6 +141,7 @@
 
   const params = new URLSearchParams(window.location.search);
   const email = (params.get('e') || '').trim();
+  const src = (params.get('src') || '').trim();
   const valid = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email);
 
   if (!valid) {
@@ -154,8 +155,11 @@
       btn.disabled = true;
       btn.textContent = 'Processing...';
       try {
-        const res = await fetch(WEBHOOK + '?e=' + encodeURIComponent(email), { method: 'GET' });
+        const url = WEBHOOK + '?e=' + encodeURIComponent(email) + (src ? '&src=' + encodeURIComponent(src) : '');
+        const res = await fetch(url, { method: 'GET' });
         if (!res.ok) throw new Error('bad status ' + res.status);
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error || 'not recorded');
         show('done');
       } catch (err) {
         console.error(err);
